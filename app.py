@@ -55,70 +55,33 @@ if "original" not in st.session_state:
     st.session_state.original = create_puzzle(solved)
     st.session_state.board = [row[:] for row in st.session_state.original]
 
-st.markdown("""
-<style>
-.sudoku-cell {
-    width: 45px;
-    height: 45px;
-    text-align: center;
-    font-size: 20px;
-    border: 1px solid black;
-}
-.bold-border-right {
-    border-right: 3px solid black;
-}
-.bold-border-bottom {
-    border-bottom: 3px solid black;
-}
-.prefilled {
-    background-color: #f0f0f0;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
-
-grid_html = "<table style='border-collapse: collapse; margin: auto;'>"
-
 for r in range(9):
-    grid_html += "<tr>"
+    cols = st.columns(9)
     for c in range(9):
-        extra_class = ""
-        if c in [2, 5]:
-            extra_class += " bold-border-right"
-        if r in [2, 5]:
-            extra_class += " bold-border-bottom"
-
         if st.session_state.original[r][c] != 0:
-            grid_html += f"""
-            <td class='sudoku-cell prefilled{extra_class}'>
-                {st.session_state.original[r][c]}
-            </td>
-            """
+            cols[c].markdown(
+                f"<div style='text-align:center;font-size:22px;font-weight:bold'>{st.session_state.original[r][c]}</div>",
+                unsafe_allow_html=True
+            )
         else:
-            value = st.session_state.board[r][c]
-            grid_html += f"""
-            <td class='sudoku-cell{extra_class}'>
-                <input type='number' min='1' max='9'
-                value='{value if value != 0 else ""}'
-                style='width:100%; height:100%; text-align:center; font-size:18px; border:none;'
-                onchange="this.form.submit()">
-            </td>
-            """
-    grid_html += "</tr>"
-
-grid_html += "</table>"
-
-st.markdown(grid_html, unsafe_allow_html=True)
+            val = cols[c].number_input(
+                "",
+                min_value=0,
+                max_value=9,
+                value=st.session_state.board[r][c],
+                key=f"{r}-{c}"
+            )
+            if val != st.session_state.board[r][c]:
+                if val == 0:
+                    st.session_state.board[r][c] = 0
+                elif is_valid(st.session_state.board, r, c, val):
+                    st.session_state.board[r][c] = val
+                else:
+                    st.warning(f"Invalid move at Row {r+1}, Column {c+1}")
+                    st.session_state.board[r][c] = 0
 
 st.divider()
 
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("🔄 Reset Game"):
-        st.session_state.clear()
-        st.experimental_rerun()
-
-with col2:
-    if find_empty_location(st.session_state.board)[0] == -1:
-        st.success("🎉 Congratulations! Puzzle Solved!")
+if st.button("🔄 Reset Game"):
+    st.session_state.clear()
+    st.experimental_rerun()
