@@ -35,21 +35,22 @@ def solve_sudoku(board):
     return False
 
 def generate_sudoku():
-    board = [[0]*9 for _ in range(9)]
+    board = [[0] * 9 for _ in range(9)]
     solve_sudoku(board)
     return board
 
-def create_puzzle(board, removed=40):
-    puzzle = [row[:] for row in board]
+def create_puzzle(solved_board, removed_count=40):
+    puzzle = [row[:] for row in solved_board]
     cells = [(r, c) for r in range(9) for c in range(9)]
     random.shuffle(cells)
-    for r, c in cells[:removed]:
+    for r, c in cells[:removed_count]:
         puzzle[r][c] = 0
     return puzzle
 
+st.set_page_config(page_title="Sudoku Game", layout="centered")
 st.title("🧩 Sudoku Game")
 
-if "board" not in st.session_state:
+if "original" not in st.session_state:
     solved = generate_sudoku()
     st.session_state.original = create_puzzle(solved)
     st.session_state.board = [row[:] for row in st.session_state.original]
@@ -58,17 +59,30 @@ for r in range(9):
     cols = st.columns(9)
     for c in range(9):
         if st.session_state.original[r][c] != 0:
-            cols[c].write(f"**{st.session_state.original[r][c]}**")
+            cols[c].markdown(
+                f"<div style='text-align:center;font-size:22px;font-weight:bold'>{st.session_state.original[r][c]}</div>",
+                unsafe_allow_html=True
+            )
         else:
             val = cols[c].number_input(
-                "", 1, 9, 0,
+                "",
+                min_value=0,
+                max_value=9,
+                value=st.session_state.board[r][c],
                 key=f"{r}-{c}"
             )
-            if val != 0:
-                if is_valid(st.session_state.board, r, c, val):
+            if val != st.session_state.board[r][c]:
+                if val == 0:
+                    st.session_state.board[r][c] = 0
+                elif is_valid(st.session_state.board, r, c, val):
                     st.session_state.board[r][c] = val
                 else:
-                    st.warning(f"Invalid move at Row {r+1}, Col {c+1}")
+                    st.warning(f"Invalid move at Row {r+1}, Column {c+1}")
+                    st.session_state.board[r][c] = 0
 
-if st.button("Reset Game"):
+st.divider()
+
+if st.button("🔄 Reset Game"):
     st.session_state.clear()
+    st.experimental_rerun()
+
